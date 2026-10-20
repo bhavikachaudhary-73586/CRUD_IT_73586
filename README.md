@@ -104,6 +104,4 @@ This project provides practical experience with:
 - Implementing CRUD functionality
 - Working with REST APIs and databases
 - Managing project dependencies with Maven
-- Using Git for version control
-- Hosting source code on GitHub
-- Preparing a project for collaboration with other developers
+- changes

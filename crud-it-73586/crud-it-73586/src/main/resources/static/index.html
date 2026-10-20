@@ -1,0 +1,148 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Customer Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 750px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px 2px;
+        }
+        input { width: 30%; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+<h1>Customer Management</h1>
+
+<form id="customerForm">
+    <input id="name" placeholder="Customer name" required>
+    <input id="email" type="email" placeholder="Email" required>
+    <button type="submit">Save Customer</button>
+    <button type="button" onclick="resetForm()">Cancel Edit</button>
+</form>
+
+<p id="message"></p>
+
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody id="customers"></tbody>
+</table>
+
+<script>
+    const api = '/api/customers';
+    let editingId = null;
+
+    async function loadCustomers() {
+        const response = await fetch(api);
+        const customers = await response.json();
+        const tbody = document.getElementById('customers');
+        tbody.replaceChildren();
+
+        customers.forEach(customer => {
+            const row = document.createElement('tr');
+
+            [customer.id, customer.name, customer.email]
+                .forEach(value => {
+                    const cell = document.createElement('td');
+                    cell.textContent = value ?? '';
+                    row.appendChild(cell);
+                });
+
+            const actions = document.createElement('td');
+
+            const edit = document.createElement('button');
+            edit.textContent = 'Edit';
+            edit.onclick = () => {
+                editingId = customer.id;
+                document.getElementById('name').value = customer.name;
+                document.getElementById('email').value = customer.email;
+            };
+
+            const remove = document.createElement('button');
+            remove.textContent = 'Delete';
+            remove.onclick = async () => {
+                if (confirm('Delete this customer?')) {
+                    const result = await fetch(`${api}/${customer.id}`, {
+                        method: 'DELETE'
+                    });
+                    if (result.ok) {
+                        showMessage('Customer deleted.');
+                        loadCustomers();
+                    } else {
+                        showMessage('Could not delete customer.');
+                    }
+                }
+            };
+
+            actions.append(edit, remove);
+            row.appendChild(actions);
+            tbody.appendChild(row);
+        });
+    }
+
+    document.getElementById('customerForm')
+        .addEventListener('submit', async event => {
+            event.preventDefault();
+
+            const customer = {
+                name: document.getElementById('name').value.trim(),
+                email: document.getElementById('email').value.trim()
+            };
+
+            const response = await fetch(
+                editingId === null ? api : `${api}/${editingId}`, {
+                    method: editingId === null ? 'POST' : 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(customer)
+                }
+            );
+
+            if (response.ok) {
+                showMessage(editingId === null
+                    ? 'Customer created.'
+                    : 'Customer updated.');
+                resetForm();
+                loadCustomers();
+            } else {
+                showMessage('Could not save customer.');
+            }
+        });
+
+    function resetForm() {
+        editingId = null;
+        document.getElementById('customerForm').reset();
+    }
+
+    function showMessage(message) {
+        document.getElementById('message').textContent = message;
+    }
+
+    loadCustomers();
+</script>
+</body>
+</html>
